@@ -111,7 +111,7 @@ function render(){
   h+=`<div class="card tags">👑 Leader · 🔥 3+ on-time streak · ⚡ First to submit · 💯 Perfect record · 🎁 Got a bonus · 🐦 Early bird (24h+ before deadline)<br>Levels: 🌱 Intern → 🧑‍⚕️ Resident (10) → 💉 Specialist (30) → 🩺 Consultant (60) → 🫀 Cardiac Legend (100)</div>`}
  if(tab==="tasks"){const F=M(fm),L=S.tasks.filter(t=>!F||mine(t,F)).sort((a,b)=>a.d-b.d);
   h+=`<div class="chips" style="margin-bottom:12px"><button class="chip ${fm?"":"on"}" data-a="fm" data-m="">Everyone</button>${S.members.map(m=>`<button class="chip ${fm===m.id?"on":""}" data-a="fm" data-m="${m.id}">${sh(m)}</button>`).join("")}</div>`;
-  h+=L.length?`<div class="grid">${L.map(task).join("")}</div>`:`<div class="card empty">No tasks here 🫀</div>`}
+  h+=L.length?`<div class="grid">${L.map(task).join("")}</div>`:`<div class="card empty">No tasks here</div>`}
  if(tab==="feed"){
   const ev=[];Object.entries(S.subs).forEach(([k,s])=>{const[t,m]=k.split("|"),T=S.tasks.find(x=>x.id===t),P=M(m);if(T&&P)ev.push({at:s.at,h:`${s.ok?"✅":"⏰"} <b>${esc(P.n)}</b> submitted <b>${esc(T.t)}</b> — <span class="${s.ok?"pos":"neg"}">${s.ok?"+"+T.p:"late, 0 pts"}</span>`})});
   S.adj.forEach((a,i)=>{const P=M(a.m);if(P)ev.push({at:a.at,h:`${a.p>0?"🎁":"⚠️"} <b>${esc(P.n)}</b> <span class="${a.p>0?"pos":"neg"}">${a.p>0?"+":""}${a.p}</span> — ${esc(a.r||"")}${admin?` <button class="chip" data-a="deladj" data-i="${i}">remove</button>`:""}`})});
