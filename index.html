@@ -2,6 +2,10 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Cardiac Twin graduation project team tracker">
+<meta name="theme-color" content="#0b2a3d">
+<meta property="og:title" content="Cardiac Twin · Team Tracker">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9D%A4%EF%B8%8F%3C/text%3E%3C/svg%3E">
 <title>Cardiac Twin · Team Tracker</title>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fb;--card:#fff;--tx:#161a2b;--mut:#6b7390;--line:#e3e7f2;--red:#e11d48;--cy:#0891b2;--gold:#d99a00;--ok:#16a34a}
@@ -65,7 +69,9 @@ input,select,textarea{font:inherit;background:var(--bg);color:var(--tx);border:1
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:12px;z-index:20;font-size:14px;animation:up .3s}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:15}
 .chip.miss{border-color:var(--red);color:var(--red)}.chip.on{background:var(--cy);color:#001;border-color:var(--cy)}.desc{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:8px 10px;margin:0 0 8px;font-size:13px}.empty{text-align:center;color:var(--mut);padding:28px}
-.chip.pd{border-color:var(--cy);color:var(--cy)}.wide{overflow-x:auto}
+.chip.pd{border-color:var(--cy);color:var(--cy)}
+.mv{font-size:11px;font-weight:700;margin-left:4px}.tg{background:#ffffff22;border:0;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px}.tg:hover{transform:rotate(180deg);transition:.4s}
+.task.hot{animation:up .5s both,glow 1.6s 1s infinite;border-color:var(--red)}@keyframes glow{50%{box-shadow:0 0 14px var(--red)}}.wide{overflow-x:auto}
 </style>
 </head>
 <body>
@@ -75,8 +81,8 @@ input,select,textarea{font:inherit;background:var(--bg);color:var(--tx);border:1
 </div>
 <script>
 const $=s=>document.querySelector(s);
-let S={members:[{"id":"m1","n":"Youssef Amr","r":"Team Leader"},{"id":"m2","n":"Hassan Tamer"},{"id":"m3","n":"Youssef Islam"},{"id":"m4","n":"Momen Ahmed"},{"id":"m5","n":"Omar Adel"},{"id":"m6","n":"Hazem Elrefaie"},{"id":"m7","n":"Momen Saber"},{"id":"m8","n":"Menna Allah Tarek"}],tasks:[],subs:{},adj:[],pend:{}};
-let admin=false,tab="board",timer,sel=[],pend=null,fm="",cred=null,me="",clearQ=[];try{me=localStorage.getItem("me")||""}catch(e){}
+let S={members:[{"id":"m1","n":"Youssef Amr","r":"Team Leader"},{"id":"m2","n":"Hassan Tamer"},{"id":"m3","n":"Youssef Islam"},{"id":"m4","n":"Momen Ahmed"},{"id":"m5","n":"Omar Adel"},{"id":"m6","n":"Hazem Elrefaie"},{"id":"m7","n":"Momen Saber"},{"id":"m8","n":"Menna Allah Tarek"}],tasks:[],subs:{},adj:[],pend:{},reqs:{},ext:{}};
+let admin=false,tab="board",timer,sel=[],pend=null,fm="",cred=null,me="",clearQ=[],clearR=[];try{me=localStorage.getItem("me")||""}catch(e){}
 try{cred=JSON.parse(sessionStorage.getItem("cred")||"null");admin=!!cred}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ini=n=>n.split(" ").map(w=>w[0]).slice(0,2).join("");
@@ -84,66 +90,89 @@ const hue=i=>i*47+330;
 const M=id=>S.members.find(m=>m.id===id);
 const now=()=>Date.now();
 const mine=(t,m)=>!t.a||!t.a.length||t.a.includes(m.id);
+const dl=(t,m)=>t.d+((S.ext||{})[t.id+"|"+m]||0)*2*864e5;
+const exLeft=m=>3-Object.keys(S.ext||{}).filter(k=>k.endsWith("|"+m)).length;
+const doneBy=(t,m)=>{const s=S.subs[t.id+"|"+m];return s&&!s.rej};
+const fin=t=>{const A=S.members.filter(m=>mine(t,m));return A.length>0&&A.every(m=>doneBy(t,m.id))};
+let loaded=false;
+const eff=()=>document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("th",t)}catch(e){}}
+try{const t=localStorage.getItem("th");if(t)document.documentElement.dataset.theme=t}catch(e){}
+function arrows(R){let st={};try{st=JSON.parse(localStorage.getItem("rk")||"{}")}catch(e){}const cur={};R.forEach(r=>cur[r.m.id]=r.rk);
+ if(!st.cur)st={prev:cur,cur};else if(JSON.stringify(st.cur)!==JSON.stringify(cur))st={prev:st.cur,cur};
+ try{localStorage.setItem("rk",JSON.stringify(st))}catch(e){}R.forEach(r=>r.mv=(st.prev[r.m.id]||r.rk)-r.rk)}
+const mvTag=r=>r.mv>0?`<span class="mv pos">▲${r.mv}</span>`:r.mv<0?`<span class="mv neg">▼${-r.mv}</span>`:"";
+const nmOf=id=>(M(id)||{n:"?"}).n,tt=id=>(S.tasks.find(t=>t.id===id)||{t:"?"}).t;
 const sh=m=>{const w=m.n.split(" ");return w[0]+(w[0]==="Youssef"||w[0]==="Momen"?" "+w[1]:"")+(m.r?" (Team Leader)":"")};
 const nm=m=>esc(m.n)+(m.r?' <small style="color:var(--cy)">(Team Leader)</small>':"");
 const lvl=p=>p>=100?"🫀 Cardiac Legend":p>=60?"🩺 Consultant":p>=30?"💉 Specialist":p>=10?"🧑‍⚕️ Resident":"🌱 Intern";
-function stats(m){let p=0,ok=0,late=0,bonus=0,first=0,pend=0,early=0;const T=S.tasks.filter(t=>mine(t,m));
- T.forEach(t=>{const s=S.subs[t.id+"|"+m.id];if(s){if(s.ok){p+=t.p;ok++;if(t.d-s.at>=864e5)early++}else if(!s.rej)late++}else if(t.d>now())pend++});
+function stats(m){let p=0,ok=0,late=0,bonus=0,first=0,pend=0,early=0,ice=0,clutch=0;const T=S.tasks.filter(t=>mine(t,m));
+ T.forEach(t=>{const s=S.subs[t.id+"|"+m.id];if(s){if(s.ok){p+=t.p;ok++;{const g=dl(t,m.id)-s.at;if(g>=864e5)early++;if(g>=2592e5)ice++;if(g>=0&&g<36e5)clutch++}}else if(!s.rej)late++}else if(dl(t,m.id)>now())pend++});
  S.adj.forEach(a=>{if(a.m===m.id)bonus+=a.p});
  T.forEach(t=>{let b=null;S.members.forEach(x=>{const s=S.subs[t.id+"|"+x.id];if(s&&s.ok&&(!b||s.at<b.at))b={at:s.at,id:x.id}});if(b&&b.id===m.id)first++});
- let streak=0;T.filter(t=>t.d<now()||S.subs[t.id+"|"+m.id]).sort((a,b)=>b.d-a.d).some(t=>{const s=S.subs[t.id+"|"+m.id];if(s&&s.ok){streak++;return false}return true});
- return{p:p+bonus,ok,late,bonus,first,streak,perfect:T.length>0&&ok===T.length,pend,early}}
-function ranked(){return S.members.map((m,i)=>({m,i,...stats(m)})).sort((a,b)=>b.p-a.p||b.ok-a.ok)}
-function badges(r,top){let b="";if(top)b+="👑";if(r.streak>=3)b+="🔥";if(r.first)b+="⚡";if(r.perfect)b+="💯";if(r.bonus>0)b+="🎁";if(r.early)b+="🐦";return b}
+ let streak=0;T.filter(t=>dl(t,m.id)<now()||S.subs[t.id+"|"+m.id]).sort((a,b)=>b.d-a.d).some(t=>{const s=S.subs[t.id+"|"+m.id];if(s&&s.ok){streak++;return false}return true});
+ return{p:p+bonus,ok,late,bonus,first,streak,perfect:T.length>0&&ok===T.length,pend,early,ice,clutch}}
+function ranked(){const R=S.members.map((m,i)=>({m,i,...stats(m)})).sort((a,b)=>b.p-a.p||(b.m.r?1:0)-(a.m.r?1:0)||b.ok-a.ok);R.forEach((r,i)=>r.rk=i+1);if(loaded)arrows(R);return R}
+function badges(r,top){let b="";if(top)b+="👑";if(r.streak>=3)b+="🔥";if(r.first)b+="⚡";if(r.perfect)b+="💯";if(r.bonus>0)b+="🎁";if(r.early)b+="🐦";if(r.ice)b+="❄️";if(r.clutch)b+="🦉";return b}
 function left(ms){let s=Math.floor(Math.abs(ms)/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return(d?d+"d ":"")+h+"h "+m+"m "+(s%60)+"s"}
 function render(){
  const R=ranked(),max=Math.max(1,...R.map(r=>r.p)),total=R.reduce((a,r)=>a+r.p,0);
  const subs=Object.values(S.subs),okc=subs.filter(s=>s.ok).length;
- const bpm=60+Math.round((subs.length?okc/subs.length:0)*60);const next=S.tasks.filter(t=>t.d>now()).sort((a,b)=>a.d-b.d)[0];const pc=Object.keys(S.pend||{}).filter(k=>{const[t,m]=k.split("|");return S.tasks.some(x=>x.id===t)&&M(m)}).length;
- let h=`<header><div class="top"><div><h1><span class="heart" style="animation-duration:${(60/bpm).toFixed(2)}s">❤️</span> Cardiac Twin</h1><p>Graduation Project · Team Tracker</p></div><div>${admin?'<span class="badge">👑 Admin</span> <button class="btn" data-a="out">Logout</button>':'<button class="btn" data-a="login">🔐 Admin</button>'}</div></div>
+ const bpm=60+Math.round((subs.length?okc/subs.length:0)*60);const next=S.tasks.filter(t=>t.d>now()).sort((a,b)=>a.d-b.d)[0];const pc=Object.keys(S.pend||{}).filter(k=>{const[t,m]=k.split("|");return S.tasks.some(x=>x.id===t)&&M(m)}).length+Object.keys(S.reqs||{}).length;
+ let h=`<header><div class="top"><div><h1><span class="heart" style="animation-duration:${(60/bpm).toFixed(2)}s">❤️</span> Cardiac Twin</h1><p>Graduation Project · Team Tracker</p></div><div style="display:flex;gap:6px;align-items:center"><button class="tg" data-a="theme" title="Dark / Light">🌗</button>${admin?'<span class="badge">👑 Admin</span> <button class="btn" data-a="out">Logout</button>':'<button class="btn" data-a="login">🔐 Admin</button>'}</div></div>
  <svg class="ecg" viewBox="0 0 400 60" preserveAspectRatio="none"><path d="M0 30H120l10-6 8 6h20l8-26 10 52 8-26h30l10-8 10 8H400"/></svg><div style="height:34px"></div></header>
  <div class="stats"><div class="card stat"><b data-n="${S.tasks.length}">0</b><span>Tasks</span></div><div class="card stat"><b data-n="${total}">0</b><span>Team points</span></div><div class="card stat"><b>${subs.length?Math.round(okc/subs.length*100):0}%</b><span>On-time rate</span></div><div class="card stat"><b data-n="${bpm}">0</b><span>💓 Team BPM (on-time = faster heart)</span></div><div class="card stat"><b class="cd" data-d="${next?next.d:0}">${next?left(next.d-now()):"—"}</b><span>${next?"Next: "+esc(next.t):"No upcoming deadline"}</span></div></div>
- <nav>${[["board","🏆 Leaderboard"],["tasks","📋 Tasks"],["feed","⚡ Activity"]].concat(admin?[["approve","🔔 Approvals"+(pc?" ("+pc+")":"")],["admin","🛠 Admin tools"]]:[]).map(([k,l])=>`<button class="btn ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
+ <nav>${[["board","🏆 Leaderboard"],["tasks","📋 Tasks"],["done","🏁 Completed"],["feed","⚡ Activity"]].concat(admin?[["approve","🔔 Approvals"+(pc?" ("+pc+")":"")],["admin","🛠 Admin tools"]]:[]).map(([k,l])=>`<button class="btn ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
  if(tab==="board"){
-  const o=[R[1],R[0],R[2]],cols=["#c0c7d6","#fbbf24","#e08a4a"],hs=[170,210,145],rk=[2,1,3];
-  h+=`<div class="podium">${o.map((r,k)=>r?`<div class="pod"><div class="av" style="--h:${hue(r.i)}">${ini(r.m.n)}</div>${k==1?'<span class="crown">👑</span>':""}<div class="nm">${nm(r.m)}</div><div class="bar" style="--c:${cols[k]};height:${hs[k]}px;animation-delay:${k*.15}s"><div class="pt" data-n="${r.p}">0</div><div style="font-size:26px">${["🥈","🥇","🥉"][k]}</div><div class="tags">${badges(r,k==1&&r.p>0)}<br>${lvl(r.p)}</div></div></div>`:"").join("")}</div>`;
-  h+=R.slice(3).map((r,k)=>row(r,k+4,max)).join("");
+  const o=[R[1],R[0],R[2]],cols=["#fbbf24","#c0c7d6","#e08a4a"];
+  h+=`<div class="podium">${o.map((r,k)=>r?`<div class="pod"><div class="av" style="--h:${hue(r.i)}">${ini(r.m.n)}</div>${r.rk==1&&r.p>0?'<span class="crown">👑</span>':""}<div class="nm">${nm(r.m)}${mvTag(r)}</div><div class="bar" style="--c:${cols[r.rk-1]};height:${[0,210,170,145][r.rk]}px;animation-delay:${k*.15}s"><div class="pt" data-n="${r.p}">0</div><div style="font-size:26px">${["🥇","🥈","🥉"][r.rk-1]}</div><div class="tags">${badges(r,r.rk==1&&r.p>0)}<br>${lvl(r.p)}</div></div></div>`:"").join("")}</div>`;
+  h+=R.slice(3).map((r,k)=>row(r,r.rk,max)).join("");
   h+=`<div class="card tags">👑 Leader · 🔥 3+ on-time streak · ⚡ First to submit · 💯 Perfect record · 🎁 Got a bonus · 🐦 Early bird (24h+ before deadline)<br>Levels: 🌱 Intern → 🧑‍⚕️ Resident (10) → 💉 Specialist (30) → 🩺 Consultant (60) → 🫀 Cardiac Legend (100)</div>`}
- if(tab==="tasks"){const F=M(fm),L=S.tasks.filter(t=>!F||mine(t,F)).sort((a,b)=>a.d-b.d);
+ if(tab==="tasks"){const F=M(fm),L=S.tasks.filter(t=>!fin(t)&&(!F||(mine(t,F)&&!doneBy(t,F.id)))).sort((a,b)=>a.d-b.d);
   h+=admin?"":`<div class="card" style="margin-bottom:12px"><select id="me"><option value="">👤 Who are you? (to mark your tasks done)</option>${S.members.map(m=>`<option value="${m.id}" ${me===m.id?"selected":""}>${esc(m.n)}</option>`).join("")}</select></div>`;
   h+=`<div class="chips" style="margin-bottom:12px"><button class="chip ${fm?"":"on"}" data-a="fm" data-m="">Everyone</button>${S.members.map(m=>`<button class="chip ${fm===m.id?"on":""}" data-a="fm" data-m="${m.id}">${sh(m)}</button>`).join("")}</div>`;
-  h+=L.length?`<div class="grid">${L.map(task).join("")}</div>`:`<div class="card empty">No tasks here</div>`}
+  h+=L.length?`<div class="grid">${L.map(task).join("")}</div>`:`<div class="card empty">No tasks here 🫀</div>`}
+ if(tab==="done"){const G=S.members.map(m=>({m,L:S.tasks.filter(t=>mine(t,m)&&doneBy(t,m.id))})).filter(g=>g.L.length);
+  h+=G.length?G.map(g=>`<div class="card" style="margin-bottom:10px"><b>${nm(g.m)}</b> <span class="tags">· ${g.L.length} completed</span><div class="feed">${g.L.map(t=>{const s=S.subs[t.id+"|"+g.m.id];return`<div>${s.ok?"✅":"⏰"} ${esc(t.t)} <span class="${s.ok?"pos":"neg"}">${s.ok?"+"+t.p:"late"}</span> <small>· ${new Date(s.at).toLocaleDateString()}</small>${admin?` <button class="chip" data-a="reopen" data-k="${t.id}|${g.m.id}">↩ reopen</button>`:""}</div>`}).join("")}</div></div>`).join(""):`<div class="card empty">Nothing completed yet</div>`}
  if(tab==="feed"){
   const ev=[];Object.entries(S.subs).forEach(([k,s])=>{const[t,m]=k.split("|"),T=S.tasks.find(x=>x.id===t),P=M(m);if(T&&P)ev.push({at:s.at,h:s.rej?`❌ <b>${esc(P.n)}</b>'s work on <b>${esc(T.t)}</b> was declined`:`${s.ok?"✅":"⏰"} <b>${esc(P.n)}</b> submitted <b>${esc(T.t)}</b> — <span class="${s.ok?"pos":"neg"}">${s.ok?"+"+T.p:"late, 0 pts"}</span>`})});
   S.adj.forEach((a,i)=>{const P=M(a.m);if(P)ev.push({at:a.at,h:`${a.p>0?"🎁":"⚠️"} <b>${esc(P.n)}</b> <span class="${a.p>0?"pos":"neg"}">${a.p>0?"+":""}${a.p}</span> — ${esc(a.r||"")}${admin?` <button class="chip" data-a="deladj" data-i="${i}">remove</button>`:""}`})});
   ev.sort((a,b)=>b.at-a.at);h+=`<div class="card feed">${ev.length?ev.slice(0,40).map(e=>`<div>${e.h}<br><small>${new Date(e.at).toLocaleString()}</small></div>`).join(""):'<div class="empty">Nothing yet</div>'}</div>`}
  if(tab==="approve"&&admin){const L=Object.entries(S.pend||{}).map(([k,at])=>{const[t,m]=k.split("|");return{k,at:+at,T:S.tasks.find(x=>x.id===t),P:M(m)}}).filter(x=>x.T&&x.P).sort((a,b)=>a.at-b.at);
-  h+=L.length?`<div class="card feed">${L.map(x=>`<div><b>${esc(x.P.n)}</b> says it's done: <b>${esc(x.T.t)}</b><br><small>${new Date(x.at).toLocaleString()} · ${x.at<=x.T.d?"✅ before deadline":"⏰ after deadline (0 pts)"}</small><div class="chips" style="margin-top:6px"><button class="chip ok" data-a="apv" data-k="${x.k}">✔ Approve</button><button class="chip miss" data-a="dec" data-k="${x.k}">✖ Decline</button></div></div>`).join("")}</div>`:`<div class="card empty">No pending approvals 🎉</div>`}
+  h+=L.length?`<div class="card feed">${L.map(x=>`<div><b>${esc(x.P.n)}</b> says it's done: <b>${esc(x.T.t)}</b><br><small>${new Date(x.at).toLocaleString()} · ${x.at<=dl(x.T,x.P.id)?"✅ before deadline":"⏰ after deadline (0 pts)"}</small><div class="chips" style="margin-top:6px"><button class="chip ok" data-a="apv" data-k="${x.k}">✔ Approve</button><button class="chip miss" data-a="dec" data-k="${x.k}">✖ Decline</button></div></div>`).join("")}</div>`:`<div class="card empty">No pending approvals 🎉</div>`}
+ if(tab==="approve"&&admin){const Q=Object.entries(S.reqs||{}).filter(([i,r])=>r&&S.tasks.some(t=>t.id===(r.t||r.t1))).map(([i,r])=>`<div>${r.ty==="swap"?`🔄 <b>${esc(nmOf(r.m1))}</b> ↔ <b>${esc(nmOf(r.m2))}</b>: ${esc(tt(r.t1))} ⇄ ${esc(tt(r.t2))}`:`🛡 <b>${esc(nmOf(r.m))}</b> asks +2 days on <b>${esc(tt(r.t))}</b> (${exLeft(r.m)} left)`}<div class="chips" style="margin-top:6px"><button class="chip ok" data-a="rq" data-id="${i}" data-v="1">✔ Approve</button><button class="chip miss" data-a="rq" data-id="${i}" data-v="0">✖ Decline</button></div></div>`);h+=Q.length?`<div class="card feed" style="margin-top:12px">${Q.join("")}</div>`:""}
  if(tab==="admin"&&admin){
-  const opt=S.members.map(m=>`<option value="${m.id}">${esc(m.n)}</option>`).join("");
+  const opt=S.members.map(m=>`<option value="${m.id}">${esc(m.n)}</option>`).join(""),swo=S.tasks.filter(t=>!fin(t)&&t.a&&t.a.length).flatMap(t=>t.a.filter(m=>M(m)&&!S.subs[t.id+"|"+m]&&!(S.pend||{})[t.id+"|"+m]).map(m=>`<option value="${t.id}|${m}">${esc(t.t)} — ${esc(sh(M(m)))}</option>`)).join("");
   h+=`<div class="card" style="margin-bottom:12px"><h3>➕ New task</h3><div class="form"><input id="tt" placeholder="Task title"><textarea id="tx" rows="2" placeholder="Description: what will they do?" style="flex:1 1 100%"></textarea><input id="td" type="datetime-local"><input id="tp" type="number" value="10" style="width:80px"><button class="btn p" data-a="addtask">Add</button></div><div class="chips" style="margin-top:8px">${S.members.map(m=>`<button class="chip ${sel.includes(m.id)?"on":""}" data-a="sel" data-m="${m.id}">${esc(sh(m))}</button>`).join("")}</div><div class="tags" style="margin-top:4px">Tap names to assign (none = whole team)</div></div>
   <div class="card" style="margin-bottom:12px"><h3>🎁 Bonus / ⚠️ Penalty</h3><div class="form"><select id="bm">${opt}</select><input id="bp" type="number" placeholder="± points" style="width:100px"><input id="br" placeholder="Reason"><button class="btn p" data-a="adj">Apply</button></div></div>
-  <div class="card"><h3>🗑 Manage tasks</h3><div class="tags">Green = assigned. None green = whole team.</div>${S.tasks.map(t=>`<div style="margin:8px 0;padding-bottom:8px;border-bottom:1px dashed var(--line)"><div class="form"><b style="flex:1">${esc(t.t)}</b><button class="chip ${pend===t.id?"miss":""}" data-a="deltask" data-t="${t.id}">${pend===t.id?"Sure? tap again":"delete"}</button></div><div class="form" style="margin-top:6px"><textarea id="ed_${t.id}" rows="2" style="flex:1" placeholder="Description">${esc(t.x||"")}</textarea><button class="chip" data-a="sdesc" data-t="${t.id}">save</button></div><div class="chips" style="margin-top:6px">${S.members.map(m=>`<button class="chip ${t.a&&t.a.includes(m.id)?"ok":""}" data-a="asg" data-t="${t.id}" data-m="${m.id}">${esc(sh(m))}</button>`).join("")}</div></div>`).join("")||'<span class="tags">None</span>'}</div>`}
+  <div class="card"><h3>🗑 Manage tasks</h3><div class="tags">Green = assigned. None green = whole team.</div>${S.tasks.filter(t=>!fin(t)).map(t=>`<div style="margin:8px 0;padding-bottom:8px;border-bottom:1px dashed var(--line)"><div class="form"><b style="flex:1">${esc(t.t)}</b><button class="chip ${pend===t.id?"miss":""}" data-a="deltask" data-t="${t.id}">${pend===t.id?"Sure? tap again":"delete"}</button></div><div class="form" style="margin-top:6px"><textarea id="ed_${t.id}" rows="2" style="flex:1" placeholder="Description">${esc(t.x||"")}</textarea><button class="chip" data-a="sdesc" data-t="${t.id}">save</button></div><div class="chips" style="margin-top:6px">${S.members.map(m=>`<button class="chip ${t.a&&t.a.includes(m.id)?"ok":""}" data-a="asg" data-t="${t.id}" data-m="${m.id}">${esc(sh(m))}</button>`).join("")}</div></div>`).join("")||'<span class="tags">None</span>'}</div><div class="card" style="margin-top:12px"><h3>🔄 Swap tasks now</h3><div class="form"><select id="sw1">${swo}</select><select id="sw2">${swo}</select><button class="btn p" data-a="dswap">Swap now</button></div><div class="tags" style="margin-top:4px">Only tasks assigned to specific people, not yet delivered.</div></div><div class="card" style="margin-top:12px"><h3>🎰 Lucky draw</h3><div class="form"><input id="lp2" type="number" value="5" style="width:80px"><button class="btn p" data-a="lucky">Spin!</button><b id="lkr"></b></div></div>`}
  $("#app").innerHTML=h;countUp()}
-function row(r,rk,max){return`<div class="card row" style="animation-delay:${rk*.05}s"><div class="rk">${rk}</div><div class="av" style="--h:${hue(r.i)}">${ini(r.m.n)}</div><div class="mid"><div class="nm">${nm(r.m)} ${badges(r,false)}</div><div class="tags">${lvl(r.p)} · ✅ ${r.ok} · ⏰ ${r.late}${r.pend?" · 📌 "+r.pend+" pending":""}</div><div class="meter"><i style="width:0" data-w="${Math.max(0,r.p/max*100)}"></i></div></div><div class="pts" data-n="${r.p}">0</div></div>`}
+function row(r,rk,max){return`<div class="card row" style="animation-delay:${rk*.05}s"><div class="rk">${rk}</div><div class="av" style="--h:${hue(r.i)}">${ini(r.m.n)}</div><div class="mid"><div class="nm">${nm(r.m)} ${badges(r,false)}${mvTag(r)}</div><div class="tags">${lvl(r.p)} · ✅ ${r.ok} · ⏰ ${r.late} · 🛡${exLeft(r.m.id)}${r.pend?" · 📌 "+r.pend+" pending":""}</div><div class="meter"><i style="width:0" data-w="${Math.max(0,r.p/max*100)}"></i></div></div><div class="pts" data-n="${r.p}">0</div></div>`}
 function task(t){const over=t.d<now(),A=S.members.filter(m=>mine(t,m)),done=A.filter(m=>(S.subs[t.id+"|"+m.id]||{}).ok).length;
- const chip=m=>{const s=S.subs[t.id+"|"+m.id],pd=(S.pend||{})[t.id+"|"+m.id],c=s?(s.rej?"miss":s.ok?"ok":"late"):pd?"pd":(over?"miss":""),ic=s?(s.rej?"❌ ":s.ok?"✅ ":"⏰ "):pd?"⏳ ":(over?"🔴 ":""),l=ic+esc(sh(m));return admin?`<button class="chip ${c}" data-a="tog" data-t="${t.id}" data-m="${m.id}">${l}</button>`:`<span class="chip ${c}">${l}</span>`};
+ const chip=m=>{const k=t.id+"|"+m.id,s=S.subs[k],pd=(S.pend||{})[k],D=dl(t,m.id),ov=D<now(),c=s?(s.rej?"miss":s.ok?"ok":"late"):pd?"pd":(ov?"miss":""),ic=s?(s.rej?"❌ ":s.ok?"✅ ":"⏰ "):pd?"⏳ ":(ov?"🔴 ":""),fz=s&&!s.rej?` <small>🧊 ${left(D-s.at)} ${D>=s.at?"early":"late"}</small>`:pd?` <small>⏸ ${left(D-pd)} ${D>=pd?"left":"late"}</small>`:"",l=ic+esc(sh(m))+((S.ext||{})[k]?" 🛡":"")+fz;return admin?`<button class="chip ${c}" data-a="tog" data-t="${t.id}" data-m="${m.id}">${l}</button>`:`<span class="chip ${c}">${l}</span>`};
  const mm=M(me),k0=t.id+"|"+me,s0=S.subs[k0],btn=(!admin&&mm&&mine(t,mm))?((S.pend||{})[k0]?'<div class="tags" style="margin-top:8px">⏳ Waiting for approval…</div>':(s0&&!s0.rej)?"":`<button class="btn p" data-a="done" data-t="${t.id}" style="margin-top:8px;width:100%">${s0&&s0.rej?"❌ Declined — submit again":"✅ I'm done"}</button>`):"";
- return`<div class="card task"><h3><span>${esc(t.t)}</span><span class="badge" style="background:var(--cy);color:#001">${t.p} pts</span></h3>${t.x?`<div class="desc">${esc(t.x)}</div>`:""}<div class="meta">Due ${new Date(t.d).toLocaleString()} · <span class="cd ${over?"over":""}" data-d="${t.d}">${over?"closed":left(t.d-now())}</span></div><div class="meter"><i style="width:${A.length?done/A.length*100:0}%"></i></div><div class="tags" style="margin:4px 0 8px">${t.a&&t.a.length?"📌 Assigned to "+A.length:"🌍 Whole team"} · ${done}/${A.length} on time</div><div class="chips">${A.map(chip).join("")}</div>${btn}</div>`}
+ const can=!admin&&mm&&mine(t,mm)&&!s0&&!(S.pend||{})[k0],xtra=can?`<div class="tags" style="margin-top:8px">⏱ Your time left: <span class="cd" data-d="${dl(t,me)}">${left(dl(t,me)-now())}</span></div><div class="chips" style="margin-top:6px">${!(S.ext||{})[k0]&&exLeft(me)>0&&!Object.values(S.reqs||{}).some(r=>r.ty==="ext"&&r.t===t.id&&r.m===me)?`<button class="chip" data-a="ext" data-t="${t.id}">🛡 Exception +2 days (${exLeft(me)} left)</button>`:""}${t.a&&t.a.includes(me)?`<button class="chip" data-a="swap" data-t="${t.id}">🔄 Swap</button>`:""}</div>`:"";
+ return`<div class="card task ${over||t.d-now()>864e5?"":"hot"}"><h3><span>${esc(t.t)}</span><span class="badge" style="background:var(--cy);color:#001">${t.p} pts</span></h3>${t.x?`<div class="desc">${esc(t.x)}</div>`:""}<div class="meta">Due ${new Date(t.d).toLocaleString()} · <span class="cd ${over?"over":""}" data-d="${t.d}">${over?"closed":left(t.d-now())}</span></div><div class="meter"><i style="width:${A.length?done/A.length*100:0}%"></i></div><div class="tags" style="margin:4px 0 8px">${t.a&&t.a.length?"📌 Assigned to "+A.length:"🌍 Whole team"} · ${done}/${A.length} on time</div><div class="chips">${A.map(chip).join("")}</div>${btn}${xtra}</div>`}
 function countUp(){document.querySelectorAll("[data-n]").forEach(e=>{const n=+e.dataset.n,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/900);e.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)});setTimeout(()=>document.querySelectorAll("[data-w]").forEach(e=>e.style.width=e.dataset.w+"%"),60)}
 setInterval(()=>document.querySelectorAll(".cd[data-d]").forEach(e=>{const d=+e.dataset.d;if(d)e.textContent=d>now()?left(d-now()):"closed"}),1000);
 function toast(m){const t=document.createElement("div");t.id="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function boom(){const c=document.createElement("canvas");c.width=innerWidth;c.height=innerHeight;$("#fx").appendChild(c);const x=c.getContext("2d"),P=[...Array(90)].map(()=>({x:innerWidth/2,y:innerHeight/2,vx:(Math.random()-.5)*16,vy:-Math.random()*14-3,c:`hsl(${Math.random()*360} 90% 60%)`,s:4+Math.random()*5}));let f=0;(function a(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.35;x.fillStyle=p.c;x.fillRect(p.x,p.y,p.s,p.s)});if(++f<110)requestAnimationFrame(a);else c.remove()})()}
-function save(delay){clearTimeout(timer);timer=setTimeout(async()=>{try{const cl=clearQ.slice(),r=await fetch("/api/state",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...cred,state:S,clear:cl})});if(!r.ok)throw 0;clearQ=clearQ.filter(k=>!cl.includes(k))}catch(e){toast("⚠️ Couldn't save — check your login / connection")}},delay||700)}
+function save(delay){clearTimeout(timer);timer=setTimeout(async()=>{try{const cl=clearQ.slice(),cr=clearR.slice(),r=await fetch("/api/state",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...cred,state:S,clear:cl,clearReq:cr})});if(!r.ok)throw 0;clearQ=clearQ.filter(k=>!cl.includes(k));clearR=clearR.filter(k=>!cr.includes(k))}catch(e){toast("⚠️ Couldn't save — check your login / connection")}},delay||700)}
 function change(delay){render();save(delay)}
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 function loginUI(){const o=document.createElement("div");o.className="ov";o.innerHTML=`<div class="card"><h3>🔐 Admin login</h3><div class="form"><input id="lu" placeholder="Username" style="width:100%"><input id="lp" type="password" placeholder="Password" style="width:100%"><button class="btn p" id="lg" style="width:100%">Enter</button><button class="btn" id="lc" style="width:100%">Cancel</button></div></div>`;document.body.appendChild(o);
  $("#lc").onclick=()=>o.remove();
  $("#lg").onclick=async()=>{const c={user:$("#lu").value.trim(),pass:$("#lp").value};let ok=false;try{ok=(await fetch("/api/state",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...c,login:true})})).ok}catch(e){}
  if(ok){cred=c;admin=true;try{sessionStorage.setItem("cred",JSON.stringify(c))}catch(e){}o.remove();render();toast("Welcome back, Leader 👑");boom()}else toast("Wrong username or password")}}
-function resolve(k,ap){const T=S.tasks.find(t=>t.id===k.split("|")[0]);if(!T)return;const at=+S.pend[k]||now(),ok=at<=T.d;S.subs[k]=ap?{at,ok}:{at,ok:false,rej:1};delete S.pend[k];clearQ.push(k);
+function resolve(k,ap){const T=S.tasks.find(t=>t.id===k.split("|")[0]);if(!T)return;const at=+S.pend[k]||now(),ok=at<=dl(T,k.split("|")[1]);S.subs[k]=ap?{at,ok}:{at,ok:false,rej:1};delete S.pend[k];clearQ.push(k);
  if(ap&&ok){boom();toast("+"+T.p+" points! 🎉")}else toast(ap?"Approved late — 0 pts":"Declined ❌");change(ap&&ok?2200:700)}
 async function sendDone(t){if(!me)return toast("Pick your name first");try{const r=await fetch("/api/state",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({act:"done",task:t,member:me})});
  if(r.ok){S.pend=S.pend||{};S.pend[t+"|"+me]=now();toast("Sent for approval ⏳");render()}else{toast(r.status===409?"Already recorded":"Couldn't send, try again");load(true)}}catch(e){toast("Couldn't send, check your connection")}}
+function doSwap(t1,m1,t2,m2){const A=S.tasks.find(t=>t.id===t1),B=S.tasks.find(t=>t.id===t2);if(!A||!B||t1===t2||m1===m2||!A.a||!B.a||!A.a.includes(m1)||!B.a.includes(m2)||A.a.includes(m2)||B.a.includes(m1)||S.subs[t1+"|"+m1]||S.subs[t2+"|"+m2]||(S.pend||{})[t1+"|"+m1]||(S.pend||{})[t2+"|"+m2])return false;A.a=A.a.map(x=>x===m1?m2:x);B.a=B.a.map(x=>x===m2?m1:x);return true}
+async function post(b,msg){try{const r=await fetch("/api/state",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)});if(r.ok){toast(msg);load(true)}else toast(r.status===409?"Already requested / not allowed":"Couldn't send")}catch(e){toast("Connection problem")}}
+function swapUI(t1){const T1=S.tasks.find(x=>x.id===t1),L=[];S.tasks.forEach(t2=>{if(t2.id===t1||!t2.a||!t2.a.length||fin(t2)||t2.a.includes(me))return;t2.a.forEach(m2=>{if(!M(m2)||T1.a.includes(m2)||S.subs[t2.id+"|"+m2]||(S.pend||{})[t2.id+"|"+m2])return;L.push([t2,m2])})});
+ const o=document.createElement("div");o.className="ov";o.innerHTML=`<div class="card"><h3>🔄 Swap with…</h3><div class="chips" style="flex-direction:column">${L.map(([t2,m2],i)=>`<button class="chip" data-i="${i}" style="text-align:left">${esc(sh(M(m2)))} — ${esc(t2.t)}</button>`).join("")||'<span class="tags">No one to swap with right now</span>'}</div><button class="btn" id="sc" style="width:100%;margin-top:10px">Close</button></div>`;document.body.appendChild(o);
+ o.onclick=e=>{if(e.target.id==="sc"||e.target===o)return o.remove();const i=e.target.dataset.i;if(i==null)return;o.remove();const[t2,m2]=L[i];post({act:"swap",t1,m1:me,t2:t2.id,m2},"Swap request sent 🔄")}}
 document.addEventListener("change",e=>{if(e.target.id==="me"){me=e.target.value;try{localStorage.setItem("me",me)}catch(x){}fm=me;render()}});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a],[data-tab]");if(!b)return;
  if(b.dataset.tab){tab=b.dataset.tab;return render()}
@@ -151,13 +180,23 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a],[data-t
  if(a==="login")return loginUI();
  if(a==="out"){admin=false;cred=null;try{sessionStorage.removeItem("cred")}catch(e){}if(tab==="admin")tab="board";return render()}
  if(a==="done")return sendDone(b.dataset.t);
+ if(a==="ext")return post({act:"ext",task:b.dataset.t,member:me},"Exception requested 🛡");
+ if(a==="swap")return swapUI(b.dataset.t);
+ if(a==="theme"){setTheme(eff()==="dark"?"light":"dark");return}
  if(a==="fm"){fm=b.dataset.m||"";return render()}
  if(!admin)return;
+ if(a==="reopen"){delete S.subs[b.dataset.k];return change()}
+ if(a==="dswap"){const[a1,b1]=$("#sw1").value.split("|"),[a2,b2]=$("#sw2").value.split("|");if(!a1||!a2||!doSwap(a1,b1,a2,b2))return toast("Can't swap these two");boom();toast("🔄 Swapped!");return change()}
+ if(a==="lucky"){const p=+$("#lp2").value||5,el=$("#lkr"),w=Math.floor(Math.random()*S.members.length);let i=0;const iv=setInterval(()=>{el.textContent="🎰 "+S.members[i++%S.members.length].n},90);setTimeout(()=>{clearInterval(iv);const W=S.members[w];el.textContent="🎉 "+W.n+" +"+p;S.adj.push({m:W.id,p,r:"🎰 Lucky draw",at:now()});boom();save(500)},2600);return}
+ if(a==="rq"){const id=b.dataset.id,r=S.reqs[id],ap=b.dataset.v==="1";delete S.reqs[id];clearR.push(id);S.ext=S.ext||{};
+  if(ap&&r.ty==="ext"){if(exLeft(r.m)>0){S.ext[r.t+"|"+r.m]=1;toast("🛡 +2 days granted")}}
+  else if(ap&&r.ty==="swap"){if(doSwap(r.t1,r.m1,r.t2,r.m2)){toast("🔄 Swapped!");boom()}else toast("Swap no longer valid")}
+  else toast("Declined");return change()}
  if(a==="apv")return resolve(b.dataset.k,true);
  if(a==="dec")return resolve(b.dataset.k,false);
  if(a==="tog"){const k=b.dataset.t+"|"+b.dataset.m,T=S.tasks.find(t=>t.id===b.dataset.t),s=S.subs[k];
   if(!s&&(S.pend||{})[k])return resolve(k,true);
-  if(!s){const ok=now()<=T.d;S.subs[k]={at:now(),ok};if(ok){boom();toast("+"+T.p+" points! 🎉");return change(2200)}toast("Submitted after deadline — 0 pts");return change()}
+  if(!s){const ok=now()<=dl(T,b.dataset.m);S.subs[k]={at:now(),ok};if(ok){boom();toast("+"+T.p+" points! 🎉");return change(2200)}toast("Submitted after deadline — 0 pts");return change()}
   if(s.ok){S.subs[k]={at:s.at,ok:false};return change()}
   if(!s.rej){S.subs[k]={at:s.at,ok:false,rej:1};return change()}
   delete S.subs[k];return change()}
@@ -169,8 +208,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a],[data-t
   pend=null;S.tasks=S.tasks.filter(t=>t.id!==id);Object.keys(S.subs).forEach(k=>{if(k.startsWith(id+"|"))delete S.subs[k]});Object.keys(S.pend||{}).forEach(k=>{if(k.startsWith(id+"|")){delete S.pend[k];clearQ.push(k)}});return change()}
  if(a==="adj"){const p=+$("#bp").value;if(!p)return toast("Enter points (+ or -)");S.adj.push({m:$("#bm").value,p,r:$("#br").value.trim(),at:now()});if(p>0)boom();$("#bp").value="";return change(p>0?2200:700)}
  if(a==="deladj"){S.adj.splice(+b.dataset.i,1);change()}});
-async function load(full){try{const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)return;const d=await r.json();if(!d||!d.members)return;d.pend=d.pend||{};
- if(admin&&!full){const old=Object.keys(S.pend||{}).length;S.pend=d.pend;clearQ.forEach(k=>delete S.pend[k]);const n=Object.keys(S.pend).length;if(n!==old){if(n>old)toast("🔔 New approval request");if(tab!=="admin")render()}}
+async function load(full){try{const r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)return;const d=await r.json();if(!d||!d.members)return;loaded=true;d.pend=d.pend||{};d.reqs=d.reqs||{};d.ext=d.ext||{};
+ if(admin&&!full){const old=Object.keys(S.pend||{}).length+Object.keys(S.reqs||{}).length;S.pend=d.pend;S.reqs=d.reqs;clearQ.forEach(k=>delete S.pend[k]);clearR.forEach(k=>delete S.reqs[k]);const n=Object.keys(S.pend).length+Object.keys(S.reqs).length;if(n!==old){if(n>old)toast("🔔 New approval request");if(tab!=="admin")render()}}
  else if(JSON.stringify(d)!==JSON.stringify(S)){S=d;render()}}catch(e){}}
 render();load(true);setInterval(()=>load(false),15000);
 </script>
