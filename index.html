@@ -122,7 +122,7 @@ function render(){
  let h=`<header><div class="top"><div><h1><span class="heart" style="animation-duration:${(60/bpm).toFixed(2)}s">❤️</span> Cardiac Twin</h1><p>Graduation Project · Team Tracker</p></div><div style="display:flex;gap:6px;align-items:center"><button class="tg" data-a="theme" title="Dark / Light">🌗</button>${admin?'<span class="badge">👑 Admin</span> <button class="btn" data-a="out">Logout</button>':'<button class="btn" data-a="login">🔐 Admin</button>'}</div></div>
  <svg class="ecg" viewBox="0 0 400 60" preserveAspectRatio="none"><path d="M0 30H120l10-6 8 6h20l8-26 10 52 8-26h30l10-8 10 8H400"/></svg><div style="height:34px"></div></header>
  <div class="stats"><div class="card stat"><b data-n="${S.tasks.length}">0</b><span>Tasks</span></div><div class="card stat"><b data-n="${total}">0</b><span>Team points</span></div><div class="card stat"><b>${subs.length?Math.round(okc/subs.length*100):0}%</b><span>On-time rate</span></div><div class="card stat"><b data-n="${bpm}">0</b><span>💓 Team BPM (on-time = faster heart)</span></div><div class="card stat"><b class="cd" data-d="${next?next.d:0}">${next?left(next.d-now()):"—"}</b><span>${next?"Next: "+esc(next.t):"No upcoming deadline"}</span></div></div>
- <nav>${[["board","🏆 Leaderboard"],["tasks","📋 Tasks"],["done","🏁 Completed"],["feed","⚡ Activity"]].concat(admin?[["approve","🔔 Approvals"+(pc?" ("+pc+")":"")],["admin","🛠 Admin tools"]]:[]).map(([k,l])=>`<button class="btn ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
+ <nav>${[["board","🏆 Leaderboard"],["tasks","📋 Tasks"],["done","📜 History"],["feed","⚡ Activity"]].concat(admin?[["approve","🔔 Approvals"+(pc?" ("+pc+")":"")],["admin","🛠 Admin tools"]]:[]).map(([k,l])=>`<button class="btn ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
  if(tab==="board"){
   const o=[R[1],R[0],R[2]],cols=["#fbbf24","#c0c7d6","#e08a4a"];
   h+=`<div class="podium">${o.map((r,k)=>r?`<div class="pod"><div class="av" style="--h:${hue(r.i)}">${ini(r.m.n)}</div>${r.rk==1&&r.p>0?'<span class="crown">👑</span>':""}<div class="nm">${nm(r.m)}${mvTag(r)}</div><div class="bar" style="--c:${cols[r.rk-1]};height:${[0,210,170,145][r.rk]}px;animation-delay:${k*.15}s"><div class="pt" data-n="${r.p}">0</div><div style="font-size:26px">${["🥇","🥈","🥉"][r.rk-1]}</div><div class="tags">${badges(r,r.rk==1&&r.p>0)}<br>${lvl(r.p)}</div></div></div>`:"").join("")}</div>`;
@@ -131,9 +131,13 @@ function render(){
  if(tab==="tasks"){const F=M(fm),L=S.tasks.filter(t=>!fin(t)&&(!F||(mine(t,F)&&!doneBy(t,F.id)))).sort((a,b)=>a.d-b.d);
   h+=admin?"":`<div class="card" style="margin-bottom:12px"><select id="me"><option value="">👤 Who are you? (to mark your tasks done)</option>${S.members.map(m=>`<option value="${m.id}" ${me===m.id?"selected":""}>${esc(m.n)}</option>`).join("")}</select></div>`;
   h+=`<div class="chips" style="margin-bottom:12px"><button class="chip ${fm?"":"on"}" data-a="fm" data-m="">Everyone</button>${S.members.map(m=>`<button class="chip ${fm===m.id?"on":""}" data-a="fm" data-m="${m.id}">${sh(m)}</button>`).join("")}</div>`;
-  h+=L.length?`<div class="grid">${L.map(task).join("")}</div>`:`<div class="card empty">No tasks here 🫀</div>`}
- if(tab==="done"){const G=S.members.map(m=>({m,L:S.tasks.filter(t=>mine(t,m)&&doneBy(t,m.id))})).filter(g=>g.L.length);
-  h+=G.length?G.map(g=>`<div class="card" style="margin-bottom:10px"><b>${nm(g.m)}</b> <span class="tags">· ${g.L.length} completed</span><div class="feed">${g.L.map(t=>{const s=S.subs[t.id+"|"+g.m.id];return`<div>${s.ok?"✅":"⏰"} ${esc(t.t)} <span class="${s.ok?"pos":"neg"}">${s.ok?"+"+t.p:"late"}</span> <small>· ${new Date(s.at).toLocaleDateString()}</small>${admin?` <button class="chip" data-a="reopen" data-k="${t.id}|${g.m.id}">↩ reopen</button>`:""}</div>`}).join("")}</div></div>`).join(""):`<div class="card empty">Nothing completed yet</div>`}
+  h+=L.length?`<div class="grid">${L.map(task).join("")}</div>`:`<div class="card empty">No tasks here</div>`}
+ if(tab==="done"){
+  const G=R.map(r=>{const m=r.m,ev=[];
+   S.tasks.forEach(t=>{const s=S.subs[t.id+"|"+m.id];if(s&&mine(t,m))ev.push({at:s.at,h:`${s.rej?"❌":s.ok?"✅":"⏰"} ${esc(t.t)} <span class="${s.rej||!s.ok?"neg":"pos"}">${s.rej?"declined":s.ok?"+"+t.p:"late · 0 pts"}</span>`})});
+   S.adj.forEach(a=>{if(a.m===m.id)ev.push({at:a.at,h:`${a.p>0?"🎁":"⚠️"} <span class="${a.p>0?"pos":"neg"}">${a.p>0?"+":""}${a.p}</span> ${esc(a.r||"")}`})});
+   ev.sort((a,b)=>b.at-a.at);return{r,m,ev}}).filter(g=>g.ev.length);
+  h+=G.length?G.map(g=>`<div class="card" style="margin-bottom:10px"><b>${nm(g.m)}</b> <span class="tags">· ${g.r.p} pts · ✅ ${g.r.ok} · ⏰ ${g.r.late} · ${lvl(g.r.p)}</span><div class="feed">${g.ev.map(e=>`<div>${e.h} <small>· ${new Date(e.at).toLocaleDateString()}</small></div>`).join("")}</div></div>`).join(""):`<div class="card empty">No history yet</div>`}
  if(tab==="feed"){
   const ev=[];Object.entries(S.subs).forEach(([k,s])=>{const[t,m]=k.split("|"),T=S.tasks.find(x=>x.id===t),P=M(m);if(T&&P)ev.push({at:s.at,h:s.rej?`❌ <b>${esc(P.n)}</b>'s work on <b>${esc(T.t)}</b> was declined`:`${s.ok?"✅":"⏰"} <b>${esc(P.n)}</b> submitted <b>${esc(T.t)}</b> — <span class="${s.ok?"pos":"neg"}">${s.ok?"+"+T.p:"late, 0 pts"}</span>`})});
   S.adj.forEach((a,i)=>{const P=M(a.m);if(P)ev.push({at:a.at,h:`${a.p>0?"🎁":"⚠️"} <b>${esc(P.n)}</b> <span class="${a.p>0?"pos":"neg"}">${a.p>0?"+":""}${a.p}</span> — ${esc(a.r||"")}${admin?` <button class="chip" data-a="deladj" data-i="${i}">remove</button>`:""}`})});
@@ -185,7 +189,6 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a],[data-t
  if(a==="theme"){setTheme(eff()==="dark"?"light":"dark");return}
  if(a==="fm"){fm=b.dataset.m||"";return render()}
  if(!admin)return;
- if(a==="reopen"){delete S.subs[b.dataset.k];return change()}
  if(a==="dswap"){const[a1,b1]=$("#sw1").value.split("|"),[a2,b2]=$("#sw2").value.split("|");if(!a1||!a2||!doSwap(a1,b1,a2,b2))return toast("Can't swap these two");boom();toast("🔄 Swapped!");return change()}
  if(a==="lucky"){const p=+$("#lp2").value||5,el=$("#lkr"),w=Math.floor(Math.random()*S.members.length);let i=0;const iv=setInterval(()=>{el.textContent="🎰 "+S.members[i++%S.members.length].n},90);setTimeout(()=>{clearInterval(iv);const W=S.members[w];el.textContent="🎉 "+W.n+" +"+p;S.adj.push({m:W.id,p,r:"🎰 Lucky draw",at:now()});boom();save(500)},2600);return}
  if(a==="rq"){const id=b.dataset.id,r=S.reqs[id],ap=b.dataset.v==="1";delete S.reqs[id];clearR.push(id);S.ext=S.ext||{};
