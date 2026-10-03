@@ -10,7 +10,6 @@ const RKEY = "cardiac-twin-reqs";
 const AKEY = "cardiac-twin-avatars";
 const CKEY = "cardiac-twin-cheers";
 const TKEY = "cardiac-twin-comments";
-const HKEY = "cardiac-twin-duels";
 const DEFAULT = {"members":[{"id":"m1","n":"Youssef Amr","r":"Team Leader"},{"id":"m2","n":"Hassan Tamer"},{"id":"m3","n":"Youssef Islam"},{"id":"m4","n":"Momen Ahmed"},{"id":"m5","n":"Omar Adel"},{"id":"m6","n":"Hazem Elrefaie"},{"id":"m7","n":"Momen Saber"},{"id":"m8","n":"Menna Allah Tarek"}],"tasks":[],"subs":{},"adj":[]};
 const h = (x) => crypto.createHash("sha256").update(String(x || "")).digest();
 const same = (a, b) => crypto.timingSafeEqual(h(a), h(b));
@@ -30,16 +29,16 @@ module.exports = async (req, res) => {
   try {
     if (req.method === "GET") {
       const s = (await redis.get(KEY)) || DEFAULT;
-      const [pend, reqs, av, cheers, comm, ch] = await Promise.all([
-        redis.hgetall(PKEY), getReqs(), getH(AKEY), getH(CKEY), getH(TKEY), getH(HKEY),
+      const [pend, reqs, av, cheers, comm] = await Promise.all([
+        redis.hgetall(PKEY), getReqs(), getH(AKEY), getH(CKEY), getH(TKEY),
       ]);
-      return res.status(200).json({ ...s, pend: pend || {}, reqs, av, cheers, comm, ch });
+      return res.status(200).json({ ...s, pend: pend || {}, reqs, av, cheers, comm });
     }
     if (req.method !== "POST") return res.status(405).end();
     const body = req.body || {};
 
     // ---- Public actions (team members) ----
-    if (["done", "ext", "swap", "avatar", "cheer", "comment", "chal"].includes(body.act)) {
+    if (["done", "ext", "swap", "avatar", "cheer", "comment"].includes(body.act)) {
       const st = (await redis.get(KEY)) || DEFAULT;
       const tk = (id) => (st.tasks || []).find((t) => t.id === id);
       const mb = (id) => (st.members || []).find((m) => m.id === id);
@@ -82,27 +81,6 @@ module.exports = async (req, res) => {
           who = M.id;
         }
         await redis.hset(TKEY, { [uid("c")]: { t: T.id, m: who, x, at: Date.now() } });
-        return OK();
-      }
-
-      if (body.act === "chal") {
-        const M = mb(body.member);
-        if (!M) return res.status(400).json({ error: "Unknown member" });
-        const all = await getH(HKEY);
-        if (body.op === "new") {
-          const T = tk(body.task), B = mb(body.b);
-          if (!T || !B || B.id === M.id || body.a !== M.id || !mine(T, M.id) || !mine(T, B.id) || busy(T.id, M.id) || busy(T.id, B.id))
-            return res.status(409).json({ error: "Invalid challenge" });
-          if (Object.values(all).some((c) => c && c.t === T.id && c.st !== "no" &&
-            ((c.a === M.id && c.b === B.id) || (c.a === B.id && c.b === M.id))))
-            return res.status(409).json({ error: "Already challenged" });
-          await redis.hset(HKEY, { [uid("d")]: { t: T.id, a: M.id, b: B.id, st: "pend", at: Date.now() } });
-          return OK();
-        }
-        const c = all[body.id];
-        if (!c || c.b !== M.id || c.st !== "pend" || !["acc", "dec"].includes(body.op))
-          return res.status(409).json({ error: "Not allowed" });
-        await redis.hset(HKEY, { [body.id]: { ...c, st: body.op === "acc" ? "on" : "no" } });
         return OK();
       }
 
