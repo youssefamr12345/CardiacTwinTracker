@@ -86,6 +86,23 @@ input,select,textarea{font:inherit;background:var(--bg);color:var(--tx);border:1
 .pf:hover{color:var(--tx);transform:scale(1.08)}.pf:hover .pav{border-color:var(--tx)}
 .pf small{color:var(--cy);font-size:11px;margin-top:-6px}
 .pav{width:100px;height:100px;border-radius:14px;display:grid;place-items:center;font-size:34px;font-weight:700;color:#fff;background:hsl(var(--h) 70% 48%);border:3px solid transparent;transition:.2s}
+.top{flex-wrap:wrap}.pod{min-width:0}.pod .nm{word-break:break-word}
+.grid{grid-template-columns:repeat(auto-fit,minmax(min(290px,100%),1fr))}
+.form input:not([type=number]):not([type=datetime-local]),.form select{flex:1 1 150px}
+@media(max-width:600px){
+.wrap{padding:10px}
+header{padding:16px 14px;border-radius:16px}
+.stats{grid-template-columns:repeat(2,1fr)}.stats .card:last-child:nth-child(odd){grid-column:1/-1}.stat b{font-size:22px}
+.podium{gap:4px;min-height:200px}.pod .bar{padding:8px 2px}.pod .pt{font-size:18px}.pod .nm{font-size:12px}.pod .tags{font-size:10px}.pod .av{width:36px;height:36px;font-size:13px}
+.row{padding:8px;gap:8px}.row .tags{font-size:11px}.pts{font-size:17px;min-width:40px}
+.btn{padding:9px 12px}.chip{padding:6px 11px}
+input,select,textarea{font-size:16px}
+.card{padding:12px}
+.ov .card{width:100%}
+.pg{grid-template-columns:repeat(2,1fr);gap:16px}.pav{width:84px;height:84px;font-size:28px}
+.task h3{flex-wrap:wrap}
+#toast{width:max-content;max-width:90vw;text-align:center}
+}
 </style>
 </head>
 <body>
@@ -129,7 +146,7 @@ function stats(m){let p=0,ok=0,late=0,bonus=0,first=0,pend=0,early=0,ice=0,clutc
 function ranked(){const R=S.members.map((m,i)=>({m,i,...stats(m)})).sort((a,b)=>b.p-a.p||(b.m.r?1:0)-(a.m.r?1:0)||b.ok-a.ok);R.forEach((r,i)=>r.rk=i+1);if(loaded)arrows(R);return R}
 function badges(r,top){let b="";if(top)b+="👑";if(r.streak>=3)b+="🔥";if(r.first)b+="⚡";if(r.perfect)b+="💯";if(r.bonus>0)b+="🎁";if(r.early)b+="🐦";if(r.ice)b+="❄️";if(r.clutch)b+="🦉";return b}
 function left(ms){let s=Math.floor(Math.abs(ms)/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return(d?d+"d ":"")+h+"h "+m+"m "+(s%60)+"s"}
-function pickHTML(){return`<div class="pick"><div class="heart" style="font-size:44px">❤️</div><h1>Cardiac Twin</h1><h2>Who's watching?</h2><div class="pg">${S.members.map((m,i)=>`<button class="pf" style="animation-delay:${i*.06}s" data-a="pick" data-m="${m.id}"><div class="pav" style="--h:${hue(i)}">${ini(m.n)}</div><span>${esc(m.n)}</span>${m.r?"<small>Team Leader</small>":""}</button>`).join("")}<button class="pf" style="animation-delay:${S.members.length*.06}s" data-a="login"><div class="pav" style="background:linear-gradient(135deg,var(--red),#a21caf)">👑</div><span>Admin</span></button></div></div>`}
+function pickHTML(){return`<div class="pick"><div class="heart" style="font-size:44px">❤️</div><h1>Cardiac Twin</h1><h2>Who are you?</h2><div class="pg">${S.members.map((m,i)=>`<button class="pf" style="animation-delay:${i*.06}s" data-a="pick" data-m="${m.id}"><div class="pav" style="--h:${hue(i)}">${ini(m.n)}</div><span>${esc(m.n)}</span>${m.r?"<small>Team Leader</small>":""}</button>`).join("")}<button class="pf" style="animation-delay:${S.members.length*.06}s" data-a="login"><div class="pav" style="background:linear-gradient(135deg,var(--red),#a21caf)">👑</div><span>Admin</span></button></div></div>`}
 function render(){
  if(!admin&&!picked){$("#app").innerHTML=pickHTML();return}
  const R=ranked(),max=Math.max(1,...R.map(r=>r.p)),total=R.reduce((a,r)=>a+r.p,0);
@@ -138,25 +155,24 @@ function render(){
  let h=`<header><div class="top"><div><h1><span class="heart" style="animation-duration:${(60/bpm).toFixed(2)}s">❤️</span> Cardiac Twin</h1><p>Graduation Project · Team Tracker</p></div><div style="display:flex;gap:6px;align-items:center"><button class="tg" data-a="theme" title="Dark / Light">🌗</button>${admin?'<span class="badge">👑 Admin</span> <button class="btn" data-a="out">Logout</button>':`<button class="btn" data-a="switch">👤 ${M(me)?esc(M(me).n.split(" ")[0]):"Profile"} ⇄</button>`}</div></div>
  <svg class="ecg" viewBox="0 0 400 60" preserveAspectRatio="none"><path d="M0 30H120l10-6 8 6h20l8-26 10 52 8-26h30l10-8 10 8H400"/></svg><div style="height:34px"></div></header>
  <div class="stats"><div class="card stat"><b data-n="${S.tasks.length}">0</b><span>Tasks</span></div><div class="card stat"><b data-n="${total}">0</b><span>Team points</span></div><div class="card stat"><b>${subs.length?Math.round(okc/subs.length*100):0}%</b><span>On-time rate</span></div><div class="card stat"><b data-n="${bpm}">0</b><span>💓 Team BPM (on-time = faster heart)</span></div><div class="card stat"><b class="cd" data-d="${next?next.d:0}">${next?left(next.d-now()):"—"}</b><span>${next?"Next: "+esc(next.t):"No upcoming deadline"}</span></div></div>
- <nav>${[["board","🏆 Leaderboard"],["tasks","📋 Tasks"],["done","📜 History"],["feed","⚡ Activity"]].concat(admin?[["approve","🔔 Approvals"+(pc?" ("+pc+")":"")],["admin","🛠 Admin tools"]]:[]).map(([k,l])=>`<button class="btn ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
+ <nav>${[["board","🏆 Leaderboard"],["tasks",admin?"📋 Tasks":"📋 My tasks"],["done",admin?"📜 History":"📜 My history"],["feed",admin?"⚡ Activity":"⚡ My activity"]].concat(admin?[["approve","🔔 Approvals"+(pc?" ("+pc+")":"")],["admin","🛠 Admin tools"]]:[]).map(([k,l])=>`<button class="btn ${tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>`;
  if(tab==="board"){
   const o=[R[1],R[0],R[2]],cols=["#fbbf24","#c0c7d6","#e08a4a"];
   h+=`<div class="podium">${o.map((r,k)=>r?`<div class="pod"><div class="av" style="--h:${hue(r.i)}">${ini(r.m.n)}</div>${r.rk==1&&r.p>0?'<span class="crown">👑</span>':""}<div class="nm">${nm(r.m)}${mvTag(r)}</div><div class="bar" style="--c:${cols[r.rk-1]};height:${[0,210,170,145][r.rk]}px;animation-delay:${k*.15}s"><div class="pt" data-n="${r.p}">0</div><div style="font-size:26px">${["🥇","🥈","🥉"][r.rk-1]}</div><div class="tags">${badges(r,r.rk==1&&r.p>0)}<br>${lvl(r.p)}</div></div></div>`:"").join("")}</div>`;
   h+=R.slice(3).map((r,k)=>row(r,r.rk,max)).join("");
   h+=`<div class="card tags">👑 Leader · 🔥 3+ on-time streak · ⚡ First to submit · 💯 Perfect record · 🎁 Got a bonus · 🐦 Early bird (24h+ before deadline)<br>Levels: 🌱 Intern → 🧑‍⚕️ Resident (10) → 💉 Specialist (30) → 🩺 Consultant (60) → 🫀 Cardiac Legend (100)</div>`}
- if(tab==="tasks"){const F=M(fm),L=S.tasks.filter(t=>!fin(t)&&(!F||(mine(t,F)&&!doneBy(t,F.id)))).sort((a,b)=>a.d-b.d);
-  h+=admin?"":`<div class="card" style="margin-bottom:12px"><select id="me"><option value="">👤 Who are you? (to mark your tasks done)</option>${S.members.map(m=>`<option value="${m.id}" ${me===m.id?"selected":""}>${esc(m.n)}</option>`).join("")}</select></div>`;
-  h+=`<div class="chips" style="margin-bottom:12px"><button class="chip ${fm?"":"on"}" data-a="fm" data-m="">Everyone</button>${S.members.map(m=>`<button class="chip ${fm===m.id?"on":""}" data-a="fm" data-m="${m.id}">${sh(m)}</button>`).join("")}</div>`;
+ if(tab==="tasks"){const F=admin?M(fm):M(me),L=S.tasks.filter(t=>!fin(t)&&(!F||(mine(t,F)&&!doneBy(t,F.id)))).sort((a,b)=>a.d-b.d);
+  h+=!admin?"":`<div class="chips" style="margin-bottom:12px"><button class="chip ${fm?"":"on"}" data-a="fm" data-m="">Everyone</button>${S.members.map(m=>`<button class="chip ${fm===m.id?"on":""}" data-a="fm" data-m="${m.id}">${sh(m)}</button>`).join("")}</div>`;
   h+=L.length?`<div class="grid">${L.map(task).join("")}</div>`:`<div class="card empty">No tasks here</div>`}
  if(tab==="done"){
   const G=R.map(r=>{const m=r.m,ev=[];
    S.tasks.forEach(t=>{const s=S.subs[t.id+"|"+m.id];if(s&&mine(t,m))ev.push({at:s.at,h:`${s.rej?"❌":s.ok?"✅":"⏰"} <b>${esc(t.t)}</b> <span class="${s.rej||!s.ok?"neg":"pos"}">${s.rej?"declined":s.ok?"+"+t.p:"late · 0 pts"}</span>${t.x?`<span class="desc" style="display:block;margin:4px 0 0">${esc(t.x)}</span>`:""}`})});
    S.adj.forEach(a=>{if(a.m===m.id)ev.push({at:a.at,h:`${a.p>0?"🎁":"⚠️"} <span class="${a.p>0?"pos":"neg"}">${a.p>0?"+":""}${a.p}</span> ${esc(a.r||"")}`})});
-   ev.sort((a,b)=>b.at-a.at);return{r,m,ev}}).filter(g=>g.ev.length);
+   ev.sort((a,b)=>b.at-a.at);return{r,m,ev}}).filter(g=>g.ev.length&&(admin||g.m.id===me));
   h+=G.length?G.map(g=>`<div class="card" style="margin-bottom:10px"><b>${nm(g.m)}</b> <span class="tags">· ${g.r.p} pts · ✅ ${g.r.ok} · ⏰ ${g.r.late} · ${lvl(g.r.p)}</span><div class="feed">${g.ev.map(e=>`<div>${e.h}<small style="display:block">${new Date(e.at).toLocaleString()}</small></div>`).join("")}</div></div>`).join(""):`<div class="card empty">No history yet</div>`}
  if(tab==="feed"){
-  const ev=[];Object.entries(S.subs).forEach(([k,s])=>{const[t,m]=k.split("|"),T=S.tasks.find(x=>x.id===t),P=M(m);if(T&&P)ev.push({at:s.at,h:s.rej?`❌ <b>${esc(P.n)}</b>'s work on <b>${esc(T.t)}</b> was declined`:`${s.ok?"✅":"⏰"} <b>${esc(P.n)}</b> submitted <b>${esc(T.t)}</b> — <span class="${s.ok?"pos":"neg"}">${s.ok?"+"+T.p:"late, 0 pts"}</span>`})});
-  S.adj.forEach((a,i)=>{const P=M(a.m);if(P)ev.push({at:a.at,h:`${a.p>0?"🎁":"⚠️"} <b>${esc(P.n)}</b> <span class="${a.p>0?"pos":"neg"}">${a.p>0?"+":""}${a.p}</span> — ${esc(a.r||"")}${admin?` <button class="chip" data-a="deladj" data-i="${i}">remove</button>`:""}`})});
+  const ev=[];Object.entries(S.subs).forEach(([k,s])=>{const[t,m]=k.split("|"),T=S.tasks.find(x=>x.id===t),P=M(m);if(T&&P&&(admin||P.id===me))ev.push({at:s.at,h:s.rej?`❌ <b>${esc(P.n)}</b>'s work on <b>${esc(T.t)}</b> was declined`:`${s.ok?"✅":"⏰"} <b>${esc(P.n)}</b> submitted <b>${esc(T.t)}</b> — <span class="${s.ok?"pos":"neg"}">${s.ok?"+"+T.p:"late, 0 pts"}</span>`})});
+  S.adj.forEach((a,i)=>{const P=M(a.m);if(P&&(admin||P.id===me))ev.push({at:a.at,h:`${a.p>0?"🎁":"⚠️"} <b>${esc(P.n)}</b> <span class="${a.p>0?"pos":"neg"}">${a.p>0?"+":""}${a.p}</span> — ${esc(a.r||"")}${admin?` <button class="chip" data-a="deladj" data-i="${i}">remove</button>`:""}`})});
   ev.sort((a,b)=>b.at-a.at);h+=`<div class="card feed">${ev.length?ev.slice(0,40).map(e=>`<div>${e.h}<br><small>${new Date(e.at).toLocaleString()}</small></div>`).join(""):'<div class="empty">Nothing yet</div>'}</div>`}
  if(tab==="approve"&&admin){const L=Object.entries(S.pend||{}).map(([k,at])=>{const[t,m]=k.split("|");return{k,at:+at,T:S.tasks.find(x=>x.id===t),P:M(m)}}).filter(x=>x.T&&x.P).sort((a,b)=>a.at-b.at);
   h+=L.length?`<div class="card feed">${L.map(x=>`<div><b>${esc(x.P.n)}</b> says it's done: <b>${esc(x.T.t)}</b><br><small>${new Date(x.at).toLocaleString()} · ${x.at<=dl(x.T,x.P.id)?"✅ before deadline":"⏰ after deadline (0 pts)"}</small><div class="chips" style="margin-top:6px"><button class="chip ok" data-a="apv" data-k="${x.k}">✔ Approve</button><button class="chip miss" data-a="dec" data-k="${x.k}">✖ Decline</button></div></div>`).join("")}</div>`:`<div class="card empty">No pending approvals 🎉</div>`}
@@ -175,7 +191,7 @@ function task(t){const over=t.d<now(),A=S.members.filter(m=>mine(t,m)),done=A.fi
  const can=!admin&&(!mm||(mine(t,mm)&&!s0&&!(S.pend||{})[k0])),reqd=Object.values(S.reqs||{}).some(r=>r.ty==="ext"&&r.t===t.id&&r.m===me),
  exb=reqd?'<span class="chip pd">🛡 Exception requested — waiting for approval ⏳</span>':(mm&&(S.ext||{})[k0])?'<span class="chip ok">🛡 Exception granted +2 days</span>':(mm&&exLeft(me)<=0)?'<span class="chip">🛡 No exceptions left</span>':`<button class="chip exc" data-a="ext" data-t="${t.id}"><span class="sh">🛡</span> Exception +2 days${mm?" ("+exLeft(me)+" left)":""}</button>`,
  xtra=can?`${mm?`<div class="tags" style="margin-top:8px">⏱ Your time left: <span class="cd" data-d="${dl(t,me)}">${left(dl(t,me)-now())}</span></div>`:""}<div class="chips" style="margin-top:6px">${exb}${mm&&t.a&&t.a.includes(me)?`<button class="chip" data-a="swap" data-t="${t.id}">🔄 Swap</button>`:""}</div>`:"";
- return`<div class="card task ${over||t.d-now()>864e5?"":"hot"}"><h3><span>${esc(t.t)}</span><span class="badge" style="background:var(--cy);color:#001">${t.p} pts</span></h3>${t.x?`<div class="desc">${esc(t.x)}</div>`:""}<div class="meta">Due ${new Date(t.d).toLocaleString()} · <span class="cd ${over?"over":""}" data-d="${t.d}">${over?"closed":left(t.d-now())}</span></div><div class="meter"><i style="width:${A.length?done/A.length*100:0}%"></i></div><div class="tags" style="margin:4px 0 8px">${t.a&&t.a.length?"📌 Assigned to "+A.length:"🌍 Whole team"} · ${done}/${A.length} on time</div><div class="chips">${A.map(chip).join("")}</div>${btn}${xtra}</div>`}
+ return`<div class="card task ${over||t.d-now()>864e5?"":"hot"}"><h3><span>${esc(t.t)}</span><span class="badge" style="background:var(--cy);color:#001">${t.p} pts</span></h3>${t.x?`<div class="desc">${esc(t.x)}</div>`:""}<div class="meta">Due ${new Date(t.d).toLocaleString()} · <span class="cd ${over?"over":""}" data-d="${t.d}">${over?"closed":left(t.d-now())}</span></div>${admin?`<div class="meter"><i style="width:${A.length?done/A.length*100:0}%"></i></div>`:""}<div class="tags" style="margin:4px 0 8px">${admin?`${t.a&&t.a.length?"📌 Assigned to "+A.length:"🌍 Whole team"} · ${done}/${A.length} on time`:(t.a&&t.a.length?"📌 Assigned to you":"🌍 Whole team task")}</div><div class="chips">${(admin?A:A.filter(m=>m.id===me)).map(chip).join("")}</div>${btn}${xtra}</div>`}
 function countUp(){document.querySelectorAll("[data-n]").forEach(e=>{const n=+e.dataset.n,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/900);e.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)});setTimeout(()=>document.querySelectorAll("[data-w]").forEach(e=>e.style.width=e.dataset.w+"%"),60)}
 setInterval(()=>document.querySelectorAll(".cd[data-d]").forEach(e=>{const d=+e.dataset.d;if(d)e.textContent=d>now()?left(d-now()):"closed"}),1000);
 function toast(m){const t=document.createElement("div");t.id="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
